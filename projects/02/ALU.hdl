@@ -42,5 +42,49 @@ CHIP ALU {
         ng; // 1 if (out < 0),  0 otherwise
 
     PARTS:
-   // Put you code here:
+        // zx - zero the x input?
+        Not(in=zx, out=notZx);
+        And16(a=x,
+            b[0]=notZx, b[1]=notZx, b[2]=notZx, b[3]=notZx,
+            b[4]=notZx, b[5]=notZx, b[6]=notZx, b[7]=notZx,
+            b[8]=notZx, b[9]=notZx, b[10]=notZx, b[11]=notZx,
+            b[12]=notZx, b[13]=notZx, b[14]=notZx, b[15]=notZx,
+            out=zxOut);
+
+        // nx - negate the x input?
+        Not16(in=zxOut, out=notX);
+        Mux16(a=zxOut, b=notX, sel=nx, out=nxOut);
+
+        // zy - zero the y input?
+        Not(in=zy, out=notZy);
+        And16(a=y,
+            b[0]=notZy, b[1]=notZy, b[2]=notZy, b[3]=notZy,
+            b[4]=notZy, b[5]=notZy, b[6]=notZy, b[7]=notZy,
+            b[8]=notZy, b[9]=notZy, b[10]=notZy, b[11]=notZy,
+            b[12]=notZy, b[13]=notZy, b[14]=notZy, b[15]=notZy,
+            out=zyOut);
+
+        // ny - negate the y input?
+        Not16(in=zyOut, out=notY);
+        Mux16(a=zyOut, b=notY, sel=ny, out=nyOut);
+
+        // f - compute out = x + y (if 1) or x & y (if 0)
+        Add16(a=nxOut, b=nyOut, out=addOut);
+        And16(a=nxOut, b=nyOut, out=andOut);
+        Mux16(a=andOut, b=addOut, sel=f, out=fOut);
+
+        // no - negate the out output?
+        Not16(in=fOut, out=negOut);
+        Mux16(a=fOut, b=negOut, sel=no,
+            out[0..7]=out0To7, out[8..15]=intOut8To15, out[15]=intOut15,
+            out=out);
+
+        // zr - 1 if (out == 0), 0 otherwise
+        Or8Way(in=out0To7, out=notZr0To7);
+        Or8Way(in=intOut8To15, out=notZr8To15);
+        Or(a=notZr0To7, b=notZr8To15, out=notZr);
+        Not(in=notZr, out=zr);
+
+        // ng - 1 if (out < 0),  0 otherwise
+        And(a=intOut15, b=true, out=ng);
 }
