@@ -16,5 +16,21 @@ CHIP PC {
     OUT out[16];
 
     PARTS:
-    // Put your code here:
+    // Internal register needs to load only when one of these conditions is
+    // true.
+    Or(a=load, b=inc, out=orTemp);
+    Or(a=orTemp, b=reset, out=regLoad);
+
+    // Internal register. Feedback coming from the combinatorial logic below.
+    Register(in=loop, load=regLoad, out=regOut, out=out);
+
+    // inc logic
+    Inc16(in=regOut, out=incRegOut);
+    Mux16(a=regOut, b=incRegOut, sel=inc, out=incOut);
+
+    // load logic
+    Mux16(a=incOut, b=in, sel=load, out=loadOut);
+
+    // reset logic
+    Mux16(a=loadOut, b=false, sel=reset, out=loop);
 }
