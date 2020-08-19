@@ -39,5 +39,50 @@ CHIP CPU {
         pc[15];          // address of next instruction
 
     PARTS:
-    // Put your code here:
+        ARegister(in=inA, load=loadA, out=outA, out[0..14]=addressM);
+        DRegister(in=inD, load=loadD, out=outD);
+        PC(in=outA, load=loadPC, inc=true, reset=reset, out[0..14]=pc);
+
+        // A or M as y to the ALU?
+        Mux16(a=outA, b=inM, sel=instruction[12], out=aOrM);
+
+        ALU(x=outD, y=aOrM, zx=instruction[11], nx=instruction[10],
+        zy=instruction[9], ny=instruction[8], f=instruction[7],
+        no=instruction[6], out=outALU, out=inD, out=outM, zr=zeroALU, zr=j2eq, ng=negALU, ng=j4lt);
+
+        // Input A with @value from A-instruction or with ALU out for
+        // C-instruction
+        Mux16(a=instruction, b=outALU, sel=instruction[15], out=inA);
+
+        // Load A if it's an A-instruction or a C-instruction with destination
+        // set to A
+        Not(in=instruction[15], out=aIns);
+        And(a=instruction[15], b=instruction[5], out=destA);
+        Or(a=aIns, b=destA, out=loadA);
+
+        // Load D if it's a C-instruction with destination set to D.
+        And(a=instruction[15], b=instruction[4], out=loadD);
+
+        // Write to M if it's a C-instruction with destination set to M.
+        And(a=instruction[15], b=instruction[3], out=writeM);
+
+        // Different conditions on the out of ALU to decide to jump or not
+        Not(in=zeroALU, out=notZeroALU, out=j5ne);
+        Not(in=negALU, out=notNegALU);
+        And(a=notZeroALU, b=notNegALU, out=posALU, out=j1gt);
+        Or(a=posALU, b=zeroALU, out=j3ge);
+        Or(a=negALU, b=zeroALU, out=j6le);
+
+        // Check if the jump condition specified in the instruction is true.
+        Mux(a=false, b=j1gt, sel=instruction[0], out=j01);
+        Mux(a=j2eq, b=j3ge, sel=instruction[0], out=j23);
+        Mux(a=j4lt, b=j5ne, sel=instruction[0], out=j45);
+        Mux(a=j6le, b=true, sel=instruction[0], out=j67);
+        Mux(a=j01, b=j23, sel=instruction[1], out=j0123);
+        Mux(a=j45, b=j67, sel=instruction[1], out=j4567);
+        Mux(a=j0123, b=j4567, sel=instruction[2], out=jmp);
+
+        // If C-instruction and if jump condition is satisfied then load PC
+        // with new address.
+        And(a=instruction[15], b=jmp, out=loadPC);
 }
