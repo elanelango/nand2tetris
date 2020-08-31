@@ -1,79 +1,71 @@
 use crate::parser::{Command, CommandIter, Operation, Segment};
+use asm_macro::hack;
 use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::Path;
 
 macro_rules! ASM_UNARY_OP {
     () => {
-        r#"// unary operation
-@SP
-M=M-1
-A=M
-{operation}
-@SP
-M=M+1
-"#
+        hack!(
+            "// unary operation",
+            "@SP",
+            M=M-1,
+            A=M,
+            "{operation}",
+            @SP,
+            M=M+1,
+        )
     };
 }
 
 macro_rules! ASM_BINARY_OP {
     () => {
-        r#"// binary operation
-@SP
-M=M-1
-A=M
-D=M
-@SP
-M=M-1
-A=M
-{operation}
-@SP
-M=M+1
-"#
+        hack!(
+            "// binary operation",
+            "@SP",
+            M = M - 1,
+            A = M,
+            D = M,
+            "@SP",
+            M = M - 1,
+            A = M,
+            "{operation}",
+            "@SP",
+            M = M + 1,
+        )
     };
 }
 
 macro_rules! ASM_LOGICAL_OP {
     () => {
-        r#"// logical operation
-D=M-D
-@{ifsuccess}
-D;{jmpop}
-@SP
-A=M
-M=0
-@{end}
-0;JMP
-({ifsuccess})
-@SP
-A=M
-M=-1
-({end})"#
+        hack!(
+            "// logical operation",
+            D = M - D,
+            "@{ifsuccess}",
+            "D;{jmpop}",
+            "@SP",
+            A = M,
+            M = 0,
+            "@{end}",
+            "0;JMP",
+            "({ifsuccess})",
+            "@SP",
+            A = M,
+            M = -1,
+            "({end})"
+        )
     };
 }
 
 macro_rules! ASM_PUSH_SEGMENT_OP {
     () => {
-        r#"{load_val}
-@SP
-A=M
-M=D
-@SP
-M=M+1
-"#
+        hack!("{load_val}", "@SP", A = M, M = D, "@SP", M = M + 1,)
     };
 }
 
 macro_rules! ASM_POP_SEGMENT_OP {
     () => {
-        r#"// pop
-@SP
-M=M-1
-A=M
-D=M
-{setup_m}
-M=D
-"#
+        hack!("// pop", "@SP", M = M - 1, A = M, D = M, "{setup_m}", M = D,)
     };
 }
 
@@ -165,7 +157,7 @@ impl CodeWriter {
             Operation::Lt => self.generate_logical_operation("JLT"),
             Operation::Or => "M=M|D".to_owned(),
             Operation::Sub => "M=M-D".to_owned(),
-            _ => panic!("Unexpected operation {:?}", operation),
+            _ => panic!("Unexpected binary operation {:?}", operation),
         };
         let asm = format!(ASM_BINARY_OP!(), operation = operation);
         self.writer.write(asm.as_bytes()).unwrap();
@@ -186,51 +178,27 @@ impl CodeWriter {
 
         if segment != Segment::Constant && segment != Segment::Static && index > 0 {
             load_val.push_str(&format!(
-                r#"// push: D = index
-@{index}
-D=A
-"#,
+                hack!("// push: D = index", "@{index}", D = A,),
                 index = index
             ));
         }
         load_val.push_str(&match segment {
-            Segment::Argument => r#"// push argument
-@ARG
-A=M"#
-                .to_owned(),
-            Segment::Constant => format!(
-                r#"// push constant
-@{index}
-D=A"#,
-                index = index
-            ),
-            Segment::Local => r#"// push local
-@LCL
-A=M"#
-                .to_owned(),
-            Segment::Pointer => r#"//push pointer
-@THIS"#
-                .to_owned(),
+            Segment::Argument => hack!("// push argument", "@ARG", A = M).to_owned(),
+            Segment::Constant => {
+                format!(hack!("// push constant", "@{index}", D = A), index = index)
+            }
+            Segment::Local => hack!("// push local", "@LCL", A = M).to_owned(),
+            Segment::Pointer => hack!("// push pointer", "@THIS").to_owned(),
             Segment::Static => {
                 let variable = self.get_static_variable(index);
                 format!(
-                    r#"//push static
-@{variable}
-D=M"#,
+                    hack!("// push static", "@{variable}", D = M),
                     variable = variable
                 )
             }
-            Segment::Temp => r#"//push temp
-@R5"#
-                .to_owned(),
-            Segment::That => r#"// push that
-@THAT
-A=M"#
-                .to_owned(),
-            Segment::This => r#"// push this
-@THIS
-A=M"#
-                .to_owned(),
+            Segment::Temp => hack!("// push temp", "@R5").to_owned(),
+            Segment::That => hack!("// push that", "@THAT", A = M).to_owned(),
+            Segment::This => hack!("// push this", "@THIS", A = M).to_owned(),
         });
         if segment != Segment::Constant && segment != Segment::Static {
             if index > 0 {
@@ -244,37 +212,17 @@ A=M"#
 
     fn generate_pop_segment(&mut self, segment: Segment, index: i16) {
         let mut setup_m = match segment {
-            Segment::Argument => r#"// pop argument
-@ARG
-A=M"#
-                .to_owned(),
-            Segment::Local => r#"// pop local
-@LCL
-A=M"#
-                .to_owned(),
-            Segment::Pointer => r#"//pop pointer
-@THIS"#
-                .to_owned(),
+            Segment::Argument => hack!("// pop argument", "@ARG", A = M).to_owned(),
+            Segment::Local => hack!("// pop local", "@LCL", A = M).to_owned(),
+            Segment::Pointer => hack!("// pop pointer", "@THIS").to_owned(),
             Segment::Static => {
                 let variable = self.get_static_variable(index);
-                format!(
-                    r#"//pop static
-@{variable}"#,
-                    variable = variable
-                )
+                format!(hack!("// pop static", "@{variable}"), variable = variable)
             }
-            Segment::Temp => r#"//pop temp
-@R5"#
-                .to_owned(),
-            Segment::That => r#"// pop that
-@THAT
-A=M"#
-                .to_owned(),
-            Segment::This => r#"// pop this
-@THIS
-A=M"#
-                .to_owned(),
-            _ => panic!("Unexpected segment"),
+            Segment::Temp => hack!("// pop temp", "@R5").to_owned(),
+            Segment::That => hack!("// pop that", "@THAT", A = M).to_owned(),
+            Segment::This => hack!("// pop this", "@THIS", A = M).to_owned(),
+            _ => panic!("Unexpected pop segment"),
         };
         if segment != Segment::Static {
             for _ in 0..index {

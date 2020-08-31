@@ -129,7 +129,7 @@ M=M+1
 M=M-1
 A=M
 D=M
-//pop temp
+// pop temp
 @R5
 A=A+1
 A=A+1
@@ -246,7 +246,7 @@ M=M+1
 // push: D = index
 @6
 D=A
-//push temp
+// push temp
 @R5
 A=D+A
 D=M

@@ -11,7 +11,7 @@ M=M+1
 M=M-1
 A=M
 D=M
-//pop pointer
+// pop pointer
 @THIS
 M=D
 // push constant
@@ -27,7 +27,7 @@ M=M+1
 M=M-1
 A=M
 D=M
-//pop pointer
+// pop pointer
 @THIS
 A=A+1
 M=D
@@ -73,7 +73,7 @@ A=A+1
 A=A+1
 A=A+1
 M=D
-//push pointer
+// push pointer
 @THIS
 D=M
 @SP
@@ -84,7 +84,7 @@ M=M+1
 // push: D = index
 @1
 D=A
-//push pointer
+// push pointer
 @THIS
 A=D+A
 D=M
