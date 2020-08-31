@@ -27,7 +27,6 @@ M=M+1
 M=M-1
 A=M
 D=M
-// pop static
 @StaticTest.8
 M=D
 // pop
@@ -35,7 +34,6 @@ M=D
 M=M-1
 A=M
 D=M
-// pop static
 @StaticTest.3
 M=D
 // pop
@@ -43,7 +41,6 @@ M=D
 M=M-1
 A=M
 D=M
-// pop static
 @StaticTest.1
 M=D
 // push static

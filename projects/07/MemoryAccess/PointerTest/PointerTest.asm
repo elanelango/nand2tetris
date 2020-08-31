@@ -11,7 +11,6 @@ M=M+1
 M=M-1
 A=M
 D=M
-// pop pointer
 @THIS
 M=D
 // push constant
@@ -27,9 +26,7 @@ M=M+1
 M=M-1
 A=M
 D=M
-// pop pointer
-@THIS
-A=A+1
+@THAT
 M=D
 // push constant
 @32
@@ -39,17 +36,24 @@ A=M
 M=D
 @SP
 M=M+1
+// segment base move
+@2
+D=A
+@THIS
+M=M+D
 // pop
 @SP
 M=M-1
 A=M
 D=M
-// pop this
 @THIS
 A=M
-A=A+1
-A=A+1
 M=D
+// segment base restore
+@2
+D=A
+@THIS
+M=M-D
 // push constant
 @46
 D=A
@@ -58,21 +62,24 @@ A=M
 M=D
 @SP
 M=M+1
+// segment base move
+@6
+D=A
+@THAT
+M=M+D
 // pop
 @SP
 M=M-1
 A=M
 D=M
-// pop that
 @THAT
 A=M
-A=A+1
-A=A+1
-A=A+1
-A=A+1
-A=A+1
-A=A+1
 M=D
+// segment base restore
+@6
+D=A
+@THAT
+M=M-D
 // push pointer
 @THIS
 D=M

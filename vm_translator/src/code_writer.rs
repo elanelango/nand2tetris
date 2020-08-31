@@ -69,8 +69,34 @@ macro_rules! ASM_POP_SEGMENT_OP {
     };
 }
 
+macro_rules! ASM_SEGMENT_BASE_MOVE {
+    () => {
+        hack!(
+            "// segment base move",
+            "@{index}",
+            D = A,
+            "@{segment_var}",
+            M = M + D,
+        )
+    };
+}
+
+macro_rules! ASM_SEGMENT_BASE_RESTORE {
+    () => {
+        hack!(
+            "// segment base restore",
+            "@{index}",
+            D = A,
+            "@{segment_var}",
+            M = M - D,
+        )
+    };
+}
+
 lazy_static! {
     static ref UNARY_OPERATIONS: Vec<Operation> = vec![Operation::Neg, Operation::Not];
+    // Segments where each memory location has a unique variable name
+    static ref NAMED_SEGMENTS: Vec<Segment> = vec![Segment::Pointer, Segment::Static, Segment::Temp];
 }
 
 pub struct CodeWriter {
@@ -211,25 +237,69 @@ impl CodeWriter {
     }
 
     fn generate_pop_segment(&mut self, segment: Segment, index: i16) {
-        let mut setup_m = match segment {
-            Segment::Argument => hack!("// pop argument", "@ARG", A = M).to_owned(),
-            Segment::Local => hack!("// pop local", "@LCL", A = M).to_owned(),
-            Segment::Pointer => hack!("// pop pointer", "@THIS").to_owned(),
-            Segment::Static => {
-                let variable = self.get_static_variable(index);
-                format!(hack!("// pop static", "@{variable}"), variable = variable)
-            }
-            Segment::Temp => hack!("// pop temp", "@R5").to_owned(),
-            Segment::That => hack!("// pop that", "@THAT", A = M).to_owned(),
-            Segment::This => hack!("// pop this", "@THIS", A = M).to_owned(),
-            _ => panic!("Unexpected pop segment"),
-        };
-        if segment != Segment::Static {
-            for _ in 0..index {
-                setup_m.push_str("\nA=A+1");
-            }
+        // Temporarily move the segment variable to point to index location
+        if !NAMED_SEGMENTS.contains(&segment) && index > 0 {
+            self.generate_segment_base_move(segment, index);
         }
+
+        let setup_m = if NAMED_SEGMENTS.contains(&segment) {
+            let variable = match segment {
+                Segment::Pointer => Self::get_pointer_variable(index),
+                Segment::Static => self.get_static_variable(index),
+                Segment::Temp => Self::get_temp_variable(index),
+                _ => panic!("Unexpected named segment!"),
+            };
+            format!(hack!("@{variable}"), variable = variable)
+        } else {
+            let variable = Self::get_segment_base(segment);
+            format!(hack!("@{variable}", A = M), variable = variable)
+        };
         let asm = format!(ASM_POP_SEGMENT_OP!(), setup_m = setup_m);
+        self.writer.write(asm.as_bytes()).unwrap();
+
+        // Restore segment variable to point to the base
+        if !NAMED_SEGMENTS.contains(&segment) && index > 0 {
+            self.generate_segment_base_restore(segment, index);
+        }
+    }
+
+    fn get_segment_base(segment: Segment) -> String {
+        match segment {
+            Segment::Argument => "ARG".to_owned(),
+            Segment::Local => "LCL".to_owned(),
+            Segment::That => "THAT".to_owned(),
+            Segment::This => "THIS".to_owned(),
+            _ => panic!("Unexpected segment!"),
+        }
+    }
+
+    fn get_temp_variable(index: i16) -> String {
+        format!("R{}", 5 + index)
+    }
+
+    fn get_pointer_variable(index: i16) -> String {
+        if index == 0 {
+            "THIS".to_owned()
+        } else {
+            "THAT".to_owned()
+        }
+    }
+
+    fn generate_segment_base_move(&mut self, segment: Segment, index: i16) {
+        let asm = format!(
+            ASM_SEGMENT_BASE_MOVE!(),
+            segment_var = Self::get_segment_base(segment),
+            index = index
+        );
+        self.writer.write(asm.as_bytes()).unwrap();
+    }
+
+    fn generate_segment_base_restore(&mut self, segment: Segment, index: i16) {
+        let asm = format!(
+            ASM_SEGMENT_BASE_RESTORE!(),
+            segment_var = Self::get_segment_base(segment),
+            index = index
+        );
         self.writer.write(asm.as_bytes()).unwrap();
     }
 }

@@ -11,7 +11,6 @@ M=M+1
 M=M-1
 A=M
 D=M
-// pop local
 @LCL
 A=M
 M=D
@@ -31,27 +30,42 @@ A=M
 M=D
 @SP
 M=M+1
+// segment base move
+@2
+D=A
+@ARG
+M=M+D
 // pop
 @SP
 M=M-1
 A=M
 D=M
-// pop argument
 @ARG
 A=M
-A=A+1
-A=A+1
 M=D
+// segment base restore
+@2
+D=A
+@ARG
+M=M-D
+// segment base move
+@1
+D=A
+@ARG
+M=M+D
 // pop
 @SP
 M=M-1
 A=M
 D=M
-// pop argument
 @ARG
 A=M
-A=A+1
 M=D
+// segment base restore
+@1
+D=A
+@ARG
+M=M-D
 // push constant
 @36
 D=A
@@ -60,21 +74,24 @@ A=M
 M=D
 @SP
 M=M+1
+// segment base move
+@6
+D=A
+@THIS
+M=M+D
 // pop
 @SP
 M=M-1
 A=M
 D=M
-// pop this
 @THIS
 A=M
-A=A+1
-A=A+1
-A=A+1
-A=A+1
-A=A+1
-A=A+1
 M=D
+// segment base restore
+@6
+D=A
+@THIS
+M=M-D
 // push constant
 @42
 D=A
@@ -91,31 +108,42 @@ A=M
 M=D
 @SP
 M=M+1
+// segment base move
+@5
+D=A
+@THAT
+M=M+D
 // pop
 @SP
 M=M-1
 A=M
 D=M
-// pop that
 @THAT
 A=M
-A=A+1
-A=A+1
-A=A+1
-A=A+1
-A=A+1
 M=D
+// segment base restore
+@5
+D=A
+@THAT
+M=M-D
+// segment base move
+@2
+D=A
+@THAT
+M=M+D
 // pop
 @SP
 M=M-1
 A=M
 D=M
-// pop that
 @THAT
 A=M
-A=A+1
-A=A+1
 M=D
+// segment base restore
+@2
+D=A
+@THAT
+M=M-D
 // push constant
 @510
 D=A
@@ -129,14 +157,7 @@ M=M+1
 M=M-1
 A=M
 D=M
-// pop temp
-@R5
-A=A+1
-A=A+1
-A=A+1
-A=A+1
-A=A+1
-A=A+1
+@R11
 M=D
 // push local
 @LCL
