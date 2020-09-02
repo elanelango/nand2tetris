@@ -103,22 +103,33 @@ pub struct CodeWriter {
     writer: BufWriter<File>,
     label_counter: i16,
     current_vm_file: Option<String>,
+    current_fn_name: Option<String>,
     current_command: Option<Command>,
 }
 
 impl CodeWriter {
     pub fn new(out_file: File) -> Self {
-        CodeWriter {
+        let mut cwriter = CodeWriter {
             writer: BufWriter::new(out_file),
             label_counter: 0,
             current_vm_file: None,
+            current_fn_name: None,
             current_command: None,
-        }
+        };
+        cwriter.init_vm();
+        cwriter
     }
 
-    pub fn write_code(&mut self, vm_file_path: &Path, commands: CommandIter) {
+    pub fn init_vm(&mut self) {
+        let asm = hack!("@256", D = A, "@SP", M = D,);
+        self.writer.write(asm.as_bytes()).unwrap();
+        self.generate_call("Sys.init".to_owned(), 0);
+    }
+
+    pub fn write_code<P: AsRef<Path>>(&mut self, vm_file_path: P, commands: CommandIter) {
         self.current_vm_file = Some(
             vm_file_path
+                .as_ref()
                 .file_stem()
                 .unwrap()
                 .to_str()
@@ -151,6 +162,24 @@ impl CodeWriter {
             }
             Command::Pop { segment, index } => {
                 self.generate_pop_segment(segment, index);
+            }
+            Command::Label { label } => {
+                self.generate_label(label);
+            }
+            Command::Goto { label } => {
+                self.generate_goto(label);
+            }
+            Command::IfGoto { label } => {
+                self.generate_if_goto(label);
+            }
+            Command::Function { name, local_count } => {
+                self.generate_function(name, local_count);
+            }
+            Command::Call { name, args_count } => {
+                self.generate_call(name, args_count);
+            }
+            Command::Return => {
+                self.generate_return();
             }
         }
     }
@@ -261,6 +290,191 @@ impl CodeWriter {
         if !NAMED_SEGMENTS.contains(&segment) && index > 0 {
             self.generate_segment_base_restore(segment, index);
         }
+    }
+
+    fn generate_label(&mut self, label: String) {
+        let asm = format!("({})\n", self.get_global_label(label));
+        self.writer.write(asm.as_bytes()).unwrap();
+    }
+
+    fn generate_goto(&mut self, label: String) {
+        let global_label = self.get_global_label(label);
+        let asm = format!(hack!("@{goto_label}", "0;JMP",), goto_label = global_label);
+        self.writer.write(asm.as_bytes()).unwrap();
+    }
+
+    fn generate_if_goto(&mut self, label: String) {
+        let global_label = self.get_global_label(label);
+        let next_command = self.get_next_label();
+        let asm = format!(
+            hack!(
+                "@SP",
+                M = M - 1,
+                A = M,
+                D = M,
+                "@{next_command}",
+                "D;JEQ",
+                "@{goto_label}",
+                "0;JMP",
+                "({next_command})",
+            ),
+            next_command = next_command,
+            goto_label = global_label
+        );
+        self.writer.write(asm.as_bytes()).unwrap();
+    }
+
+    fn generate_function(&mut self, name: String, local_count: i16) {
+        let mut asm = format!("({})\n", name);
+        if local_count > 0 {
+            asm.push_str("@SP\n");
+            for _ in 0..local_count {
+                asm.push_str(hack!(A = M, M = 0, "@SP", M = M + 1,));
+            }
+        }
+        self.writer.write(asm.as_bytes()).unwrap();
+        self.current_fn_name = Some(name);
+    }
+
+    fn generate_call(&mut self, name: String, args_count: i16) {
+        let return_label = self.get_next_label();
+        let asm = format!(
+            hack!(
+                "// push return-address",
+                "@{return_label}",
+                D = A,
+                "@SP",
+                A = M,
+                M = D,
+                "@SP",
+                M = M + 1,
+                "// push LCL",
+                "@LCL",
+                D = M,
+                "@SP",
+                A = M,
+                M = D,
+                "@SP",
+                M = M + 1,
+                "// push ARG",
+                "@ARG",
+                D = M,
+                "@SP",
+                A = M,
+                M = D,
+                "@SP",
+                M = M + 1,
+                "// push THIS",
+                "@THIS",
+                D = M,
+                "@SP",
+                A = M,
+                M = D,
+                "@SP",
+                M = M + 1,
+                "// push THAT",
+                "@THAT",
+                D = M,
+                "@SP",
+                A = M,
+                M = D,
+                "@SP",
+                M = M + 1,
+                "// ARG = SP-n-5",
+                D = M,
+                "@{args_count}",
+                D = D - A,
+                "@5",
+                D = D - A,
+                "@ARG",
+                M = D,
+                "// LCL = SP",
+                "@SP",
+                D = M,
+                "@LCL",
+                M = D,
+                "// goto f",
+                "@{fn_name}",
+                "0;JMP",
+                "({return_label})",
+            ),
+            return_label = return_label,
+            args_count = args_count,
+            fn_name = name
+        );
+        self.writer.write(asm.as_bytes()).unwrap();
+    }
+
+    fn generate_return(&mut self) {
+        let asm = hack!(
+            "// FRAME = LCL",
+            "@LCL",
+            D = M,
+            "@R13",
+            M = D,
+            "// RET = *(LCL - 5)",
+            "@LCL",
+            D = M,
+            "@5",
+            A = D - A,
+            D = M,
+            "@R14",
+            M = D,
+            "// *ARG = pop()",
+            "@SP",
+            M = M - 1,
+            A = M,
+            D = M,
+            "@ARG",
+            A = M,
+            M = D,
+            "// SP = ARG + 1",
+            D = A + 1,
+            "@SP",
+            M = D,
+            "// THAT = *(FRAME - 1)",
+            "@R13",
+            M = M - 1,
+            A = M,
+            D = M,
+            "@THAT",
+            M = D,
+            "// THIS = *(FRAME - 2)",
+            "@R13",
+            M = M - 1,
+            A = M,
+            D = M,
+            "@THIS",
+            M = D,
+            "// ARG = *(FRAME - 3)",
+            "@R13",
+            M = M - 1,
+            A = M,
+            D = M,
+            "@ARG",
+            M = D,
+            "// LCL = *(FRAME - 4)",
+            "@R13",
+            M = M - 1,
+            A = M,
+            D = M,
+            "@LCL",
+            M = D,
+            "// goto RET",
+            "@R14",
+            A = M,
+            "0;JMP",
+        );
+        self.writer.write(asm.as_bytes()).unwrap();
+    }
+
+    fn get_global_label(&self, label: String) -> String {
+        let prefix = if self.current_fn_name.is_some() {
+            self.current_fn_name.as_ref().unwrap()
+        } else {
+            self.current_vm_file.as_ref().unwrap()
+        };
+        format!("{}${}", prefix, label)
     }
 
     fn get_segment_base(segment: Segment) -> String {

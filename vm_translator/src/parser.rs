@@ -99,6 +99,12 @@ pub enum Command {
     Alu(Operation),
     Push { segment: Segment, index: i16 },
     Pop { segment: Segment, index: i16 },
+    Label { label: String },
+    Goto { label: String },
+    IfGoto { label: String },
+    Function { name: String, local_count: i16 },
+    Call { name: String, args_count: i16 },
+    Return,
 }
 
 impl Command {
@@ -113,6 +119,30 @@ impl Command {
             let segment = SEGMENT_MAP[tokens.nth(1).unwrap()];
             let index = tokens.nth(0).unwrap().parse::<i16>().unwrap();
             Command::Pop { segment, index }
+        } else if command.starts_with("label") {
+            let mut tokens = command.split(" ");
+            let label = tokens.nth(1).unwrap().to_owned();
+            Command::Label { label }
+        } else if command.starts_with("goto") {
+            let mut tokens = command.split(" ");
+            let label = tokens.nth(1).unwrap().to_owned();
+            Command::Goto { label }
+        } else if command.starts_with("if-goto") {
+            let mut tokens = command.split(" ");
+            let label = tokens.nth(1).unwrap().to_owned();
+            Command::IfGoto { label }
+        } else if command.starts_with("function") {
+            let mut tokens = command.split(" ");
+            let name = tokens.nth(1).unwrap().to_owned();
+            let local_count = tokens.nth(0).unwrap().parse::<i16>().unwrap();
+            Command::Function { name, local_count }
+        } else if command.starts_with("call") {
+            let mut tokens = command.split(" ");
+            let name = tokens.nth(1).unwrap().to_owned();
+            let args_count = tokens.nth(0).unwrap().parse::<i16>().unwrap();
+            Command::Call { name, args_count }
+        } else if command.starts_with("return") {
+            Command::Return
         } else if OPERATION_MAP.contains_key(&command) {
             Command::Alu(OPERATION_MAP[&command])
         } else {
