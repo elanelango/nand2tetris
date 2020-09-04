@@ -1,0 +1,32 @@
+/** Represents a snake as a linked list (queue) of body parts. */
+class Snake {
+    field Part part;
+    field Snake next;
+
+    static int xStart;
+    static int xEnd;
+    static int yStart;
+    static int yEnd;
+    
+    /* Creates a Snake. */
+    constructor Snake new() {
+        let part = Part.new(0, 0, 0);
+        return this;
+    }
+
+    /** Accessors. */
+    method int getNext() { return next; }
+
+    /** Disposes this Snake by recursively disposing its tail. */
+    method void disposeSnake() {
+        if (~(next = null)) {
+            do next.disposeSnake();
+        }
+        // Uses an OS routine to recycle this object.
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    // More Snake processing methods can come here.
+
+}

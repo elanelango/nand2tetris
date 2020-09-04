@@ -1,0 +1,17 @@
+class Part {
+    field int x;
+    field int y;
+    field int dir;
+
+    constructor Part new(int xVal, int yVal, int dirVal) {
+        let x = xVal;
+        let y = yVal;
+        let dir = dirVal;
+        return this;
+    }
+
+    method void dispose() {
+        do Memory.deAlloc(this);
+        return;
+    }
+}

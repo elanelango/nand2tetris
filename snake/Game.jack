@@ -1,0 +1,28 @@
+class Game {
+    static int xStart, xEnd, yStart, yEnd;
+
+    function void init() {
+        var int borderXStart, borderXEnd, borderYStart, borderYEnd;
+        
+        let xStart = 6;
+        let xEnd = 505;
+        let yStart = 15;
+        let yEnd = 254;
+
+        let borderXStart = xStart - 1;
+        let borderXEnd = xEnd + 1;
+        let borderYStart = yStart - 1;
+        let borderYEnd = yEnd + 1;
+        
+        do Screen.drawLine(borderXStart, borderYStart, borderXEnd, borderYStart);
+        do Screen.drawLine(borderXEnd, borderYStart, borderXEnd, borderYEnd);
+        do Screen.drawLine(borderXEnd, borderYEnd, borderXStart, borderYEnd);
+        do Screen.drawLine(borderXStart, borderYEnd, borderXStart, borderYStart);
+        
+        return;
+    }
+
+    function int xStart() {
+        return xStart;
+    }
+}

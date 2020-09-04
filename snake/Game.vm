@@ -1,0 +1,54 @@
+function Game.init 4
+push constant 6
+pop static 0
+push constant 505
+pop static 1
+push constant 15
+pop static 2
+push constant 254
+pop static 3
+push static 0
+push constant 1
+sub
+pop local 0
+push static 1
+push constant 1
+add
+pop local 1
+push static 2
+push constant 1
+sub
+pop local 2
+push static 3
+push constant 1
+add
+pop local 3
+push local 0
+push local 2
+push local 1
+push local 2
+call Screen.drawLine 4
+pop temp 0
+push local 1
+push local 2
+push local 1
+push local 3
+call Screen.drawLine 4
+pop temp 0
+push local 1
+push local 3
+push local 0
+push local 3
+call Screen.drawLine 4
+pop temp 0
+push local 0
+push local 3
+push local 0
+push local 2
+call Screen.drawLine 4
+pop temp 0
+push constant 0
+return
+function Game.xStart 0
+push static 0
+return
