@@ -1,0 +1,92 @@
+class Part {
+    field int x;
+    field int y;
+    field Part prev;
+    field Part next;
+
+    constructor Part new(int xVal, int yVal) {
+        let x = xVal;
+        let y = yVal;
+        let prev = null;
+        let next = null;
+
+        return this;
+    }
+
+    method int getX() {
+        return x;
+    }
+
+    method int getY() {
+        return y;
+    }
+
+    method Part getPrev() {
+        return prev;
+    }
+
+    method void setPrev(Part part) {
+        let prev = part;
+        return;
+    }
+
+    method Part getNext() {
+        return next;
+    }
+
+    method void setNext(Part part) {
+        let next = part;
+        return;
+    }
+
+    method void draw(bool color) {
+        do Screen.setColor(color);
+        do Screen.drawRectangle(x, y, x + 9, y + 9);
+        return;
+    }
+
+    method void setHeadCoords() {
+        var int newX, newY, nextX, nextY, gameDir;
+        let nextX = next.getX();
+        let nextY = next.getY();
+        let gameDir = Game.dir();
+
+        if (gameDir = 0) {
+            let newX = nextX - 10;
+            let newY = nextY;
+        } else {
+            if (gameDir = 1) {
+                let newX = nextX;
+                let newY = nextY - 10;
+            } else {
+                if (gameDir = 2) {
+                    let newX = nextX + 10;
+                    let newY = nextY;
+                } else {
+                    let newX = nextX;
+                    let newY = nextY + 10;
+                }
+            }
+        }
+
+        if (newX < 6) {
+            let newX = 496;
+        } else {
+            if (newX > 496) {
+                let newX = 6;
+            } else {
+                if (newY < 15) {
+                    let newY = 245;
+                } else {
+                    if (newY > 245) {
+                        let newY = 15;
+                    }
+                }
+            }
+        }
+        let x = newX;
+        let y = newY;
+
+        return;
+    }
+}

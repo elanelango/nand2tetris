@@ -2,4 +2,4 @@
 *.dat
 *.hack
 target/
-
+snake/*.vm

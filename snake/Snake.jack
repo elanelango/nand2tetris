@@ -1,0 +1,88 @@
+/** Represents a snake as a doubly linked list (queue) of body parts. */
+class Snake {
+    field Part head;
+    field Part tail;
+
+    /* Creates a Snake. */
+    constructor Snake new() {
+        var int headX, headY;
+        var Part body1, body2;
+
+        let headX = 256;
+        let headY = 15;
+
+        let head = Part.new(headX, headY);
+        do head.draw(true);
+        let body1 = Part.new(headX + 10, headY);
+        do body1.draw(true);
+        let body2 = Part.new(headX + 20, headY);
+        do body2.draw(true);
+        let tail = Part.new(headX + 30, headY);
+        do tail.draw(true);
+
+        do head.setNext(body1);
+        do body1.setPrev(head);
+        do body1.setNext(body2);
+        do body2.setPrev(body1);
+        do body2.setNext(tail);
+        do tail.setPrev(body2);
+
+        return this;
+    }
+
+    method int getHeadX() {
+        return head.getX();
+    }
+
+    method int getHeadY() {
+        return head.getY();
+    }
+
+    method bool move(bool grow) {
+        var Part oldHead, oldTail, newPart;
+        let oldHead = head;
+        let oldTail = tail;
+
+        if (grow) {
+            let newPart = Part.new(0, 0);
+            let head = newPart;
+        } else {
+            // Clear old tail
+            do tail.draw(false);
+
+            // Re-use the previous tail part as the new head part.
+            let tail = tail.getPrev();
+            do tail.setNext(null);
+            let head = oldTail;
+            do head.setPrev(null);
+        }
+        do head.setNext(oldHead);
+        do oldHead.setPrev(head);
+
+        // Set co-ordinates of new head
+        do head.setHeadCoords();
+
+        // draw new head
+        do head.draw(true);
+        return validate();
+    }
+
+    method bool validate() {
+        var int headX, headY;
+        var Part part;
+
+        let headX = head.getX();
+        let headY = head.getY();
+        let part = head.getNext();
+
+        while (~(part = null)) {
+            if (headX = part.getX()) {
+                if (headY = part.getY()) {
+                    return false;
+                }
+            }
+            let part = part.getNext();
+        }
+        return true;
+    }
+}

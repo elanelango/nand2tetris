@@ -1,0 +1,109 @@
+class Game {
+    static Snake snake;
+    static int dir;
+    static int foodX, foodY;
+    static bool createFood;
+
+    function void init() {
+        var int xStart, xEnd, yStart, yEnd;
+        var int borderXStart, borderXEnd, borderYStart, borderYEnd;
+
+        let xStart = 6;
+        let xEnd = 505;
+        let yStart = 15;
+        let yEnd = 254;
+
+        let borderXStart = xStart - 1;
+        let borderXEnd = xEnd + 1;
+        let borderYStart = yStart - 1;
+        let borderYEnd = yEnd + 1;
+
+        do Screen.drawLine(borderXStart, borderYStart, borderXEnd, borderYStart);
+        do Screen.drawLine(borderXEnd, borderYStart, borderXEnd, borderYEnd);
+        do Screen.drawLine(borderXEnd, borderYEnd, borderXStart, borderYEnd);
+        do Screen.drawLine(borderXStart, borderYEnd, borderXStart, borderYStart);
+
+        let snake = Snake.new();
+        let dir = 0;
+        let foodX = 6;
+        let foodY = 15;
+        let createFood = true;
+
+        return;
+    }
+
+    function void loop() {
+        var int count, rem, headX, headY, num;
+        var bool grow, alive, lastDirMoved;
+        let count = 0;
+        let alive = true;
+        let lastDirMoved = false;
+
+        while (alive) {
+            if (lastDirMoved) {
+                if (Keyboard.keyPressed() = 130) {
+                    if (-(dir = 1) | -(dir = 3)) {
+                        let dir = 0;
+                        let lastDirMoved = false;
+                    }
+                } else {
+                    if (Keyboard.keyPressed() = 131) {
+                        if (-(dir = 0) | -(dir = 2)) {
+                            let dir = 1;
+                            let lastDirMoved = false;
+                        }
+                    } else {
+                        if (Keyboard.keyPressed() = 132) {
+                            if (-(dir = 1) | -(dir = 3)) {
+                                let dir = 2;
+                                let lastDirMoved = false;
+                            }
+                        } else {
+                            if (Keyboard.keyPressed() = 133) {
+                                if (-(dir = 0) | -(dir = 2)) {
+                                    let dir = 3;
+                                    let lastDirMoved = false;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if (createFood) {
+                let num = count / 100;
+                let foodX = 6 + ((num - ((num / 50) * 50)) * 10);
+                let foodY = 15 + ((num - ((num / 24) * 24)) * 10);
+                let createFood = false;
+            }
+            do Screen.setColor(true);
+            do Screen.drawRectangle(foodX, foodY, foodX + 9, foodY + 9);
+
+            let headX = snake.getHeadX();
+            let headY = snake.getHeadY();
+            if (headX = foodX) {
+                if (headY = foodY) {
+                    let grow = true;
+                    let createFood = true;
+                }
+            }
+            let rem = count - ((count / 80) * 80);
+            if (rem = 0) {
+                let alive = snake.move(grow);
+                let lastDirMoved = true;
+                let grow = false;
+            }
+
+            let count = count + 1;
+            if (count < 0) {
+                let count = 0;
+            }
+        }
+        do Output.moveCursor(0, 0);
+        do Output.printString("Game Over!");
+        return;
+    }
+
+    function int dir() {
+        return dir;
+    }
+}
