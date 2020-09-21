@@ -3,3 +3,11 @@
 *.hack
 target/
 snake/*.vm
+projects/*/*/Array.vm
+projects/*/*/Keyboard.vm
+projects/*/*/Math.vm
+projects/*/*/Memory.vm
+projects/*/*/Output.vm
+projects/*/*/Screen.vm
+projects/*/*/String.vm
+projects/*/*/Sys.vm
